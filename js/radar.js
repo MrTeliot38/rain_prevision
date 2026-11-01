@@ -31,15 +31,7 @@ export class Radar {
     this.lecture = null;
     this.grilleChargee = 0;
     this.carte = L.map(conteneur, { zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
-    const osm = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-    if (CLE_CARTO) {
-      L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CLE_CARTO}`, {
-        maxZoom: 13,
-        attribution: `${osm} © <a href="https://carto.com/attributions">CARTO</a>`,
-      }).addTo(this.carte);
-    } else {
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 13, attribution: osm }).addTo(this.carte);
-    }
+    this.installerFond();
     this.carte.attributionControl.addAttribution(
       'Radar <a href="https://www.rainviewer.com/">RainViewer</a> · Prévision Météo-France via <a href="https://open-meteo.com/">Open-Meteo</a>'
     );
@@ -52,6 +44,39 @@ export class Radar {
       this.pause();
       this.afficher(+controles.curseur.value);
     });
+  }
+
+  // Fond de carte : CARTO (avec clé) si possible, sinon OpenStreetMap.
+  // Si CARTO refuse les tuiles (clé limitée à un autre domaine, quota…), on bascule tout seul.
+  installerFond() {
+    const osm = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+    const sources = [];
+    if (CLE_CARTO) {
+      sources.push({
+        url: `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CLE_CARTO}`,
+        options: { subdomains: 'abcd', attribution: `${osm} © <a href="https://carto.com/attributions">CARTO</a>` },
+      });
+    }
+    sources.push({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', options: { attribution: osm } });
+
+    const essayer = (i) => {
+      const s = sources[i];
+      const couche = L.tileLayer(s.url, { maxZoom: 13, zIndex: 1, ...s.options });
+      let ok = 0;
+      let echecs = 0;
+      couche.on('tileload', () => ok++);
+      couche.on('tileerror', () => {
+        echecs++;
+        if (!ok && echecs >= 3 && i + 1 < sources.length) {
+          this.carte.removeLayer(couche); // retire aussi son attribution
+          couche.off();
+          essayer(i + 1);
+        }
+      });
+      couche.addTo(this.carte);
+      this.fond = couche;
+    };
+    essayer(0);
   }
 
   placer(lat, lon) {

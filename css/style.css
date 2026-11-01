@@ -105,8 +105,11 @@ main { flex: 1; overflow-y: auto; }
 .bandeau-detail { margin-top: 4px; opacity: .92; }
 
 /* tuiles 1 h … 24 h */
-.horizons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+.horizons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
 .horizon {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   background: var(--surface);
   border: 1px solid var(--bord);
   border-top: 4px solid var(--sec);
@@ -123,11 +126,21 @@ main { flex: 1; overflow-y: auto; }
 .horizon-valeur { font-weight: 700; font-size: 1rem; white-space: nowrap; }
 .horizon-detail { font-size: .7rem; color: var(--doux); line-height: 1.2; }
 
-@media (max-width: 420px) {
-  .horizons { grid-template-columns: repeat(6, 1fr); }
-  .horizon { grid-column: span 2; }
-  .horizon:nth-child(4), .horizon:nth-child(5) { grid-column: span 3; }
-}
+.horizon[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* sélecteur de durée */
+.selecteur { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--fond); border-radius: 12px; padding: 3px; gap: 2px; }
+.selecteur button { border: 0; background: none; border-radius: 9px; padding: 7px 0; font-size: .85rem; color: var(--doux); }
+.selecteur button.actif { background: var(--accent); color: var(--accent-texte); font-weight: 600; }
+.precision { font-size: .72rem; color: var(--doux); text-align: right; }
+.resume-periode { font-size: .9rem; margin: 10px 0 4px; line-height: 1.4; }
+.graphique .valeur { font-size: 8.5px; font-weight: 600; fill: var(--texte); }
+.graphique .courbe-cumul { fill: none; stroke: var(--texte); stroke-width: 1.6; stroke-dasharray: 4 3; opacity: .75; }
+.graphique .axe-cumul { fill: var(--texte); opacity: .7; }
+.graphique .grille-temps { stroke-dasharray: 2 3; opacity: .7; }
+.graphique .axe-maintenant { font-weight: 600; }
+.graphique .vide-svg { font-size: 11px; fill: var(--doux); }
+.legende i.cumul { height: 0; width: 14px; border-top: 2px dashed var(--texte); border-radius: 0; opacity: .75; vertical-align: 3px; }
 
 /* graphique */
 .bascule { display: flex; background: var(--fond); border-radius: 999px; padding: 3px; }

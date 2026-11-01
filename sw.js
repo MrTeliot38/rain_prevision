@@ -1,5 +1,5 @@
 // Service worker : l'appli s'ouvre même hors connexion (les prévisions, elles, viennent du réseau).
-const VERSION = 'pluie-v2';
+const VERSION = 'pluie-v3';
 const FICHIERS = [
   './',
   'index.html',

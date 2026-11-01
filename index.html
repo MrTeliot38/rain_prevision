@@ -37,16 +37,23 @@
       <div class="bloc">
         <div class="bloc-entete">
           <h2>Pluie prévue</h2>
-          <div class="bascule" role="group" aria-label="Période du graphique">
-            <button type="button" data-periode="6" class="actif">6 h · ¼ h</button>
-            <button type="button" data-periode="24">24 h · heure</button>
-          </div>
+          <span class="precision" id="precision"></span>
         </div>
+        <div class="selecteur" role="radiogroup" aria-label="Durée affichée">
+          <button type="button" role="radio" data-periode="1">1 h</button>
+          <button type="button" role="radio" data-periode="2">2 h</button>
+          <button type="button" role="radio" data-periode="4">4 h</button>
+          <button type="button" role="radio" data-periode="6">6 h</button>
+          <button type="button" role="radio" data-periode="12">12 h</button>
+          <button type="button" role="radio" data-periode="24">24 h</button>
+        </div>
+        <p class="resume-periode" id="resume-periode"></p>
         <div id="graphique" class="graphique"></div>
         <div class="legende">
           <span><i data-niveau="faible"></i>faible</span>
           <span><i data-niveau="moderee"></i>modérée</span>
           <span><i data-niveau="forte"></i>forte</span>
+          <span><i class="cumul"></i>cumul</span>
         </div>
       </div>
       <p class="maj" id="maj"></p>

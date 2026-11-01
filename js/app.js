@@ -8,7 +8,7 @@ const $ = (s) => document.querySelector(s);
 // Dans l'APK Android (Capacitor), on passe par les modules natifs pour la position et les notifications.
 const NATIF = !!window.Capacitor?.isNativePlatform?.();
 const PLUGINS = window.Capacitor?.Plugins || {};
-const HORIZONS = [1, 2, 4, 12, 24];
+const HORIZONS = [1, 2, 4, 6, 12, 24];
 const RAFRAICHISSEMENT = 10 * 60000;
 
 // ---------- stockage local (peut être indisponible : on ne compte pas dessus) ----------
@@ -31,7 +31,7 @@ const stock = {
 const etat = {
   lieu: stock.lire('lieu', null),
   prevision: stock.lire('derniere-prevision', null),
-  periode: 6,
+  periode: stock.lire('periode', 2),
   alerte: stock.lire('alerte', { active: false, seuil: 'faible', avance: 30 }),
   programmees: stock.lire('programmees', [
     { nom: 'Matin', heure: '07:00', jours: ['lun', 'mar', 'mer', 'jeu', 'ven'], horizon_heures: 12, seuil: 'faible', si_sec: true },
@@ -209,9 +209,13 @@ function afficher() {
   conteneur.innerHTML = '';
   for (const h of HORIZONS) {
     const r = resumer(prev, h, maintenant);
-    const tuile = document.createElement('div');
+    const tuile = document.createElement('button');
+    tuile.type = 'button';
     tuile.className = 'horizon';
     tuile.dataset.niveau = r.niveau;
+    tuile.dataset.periode = h;
+    tuile.setAttribute('aria-pressed', String(h === etat.periode));
+    tuile.addEventListener('click', () => choisirPeriode(h));
     const sec = r.niveau === 'sec';
     tuile.innerHTML = `
       <span class="horizon-duree">${h} h</span>
@@ -226,48 +230,133 @@ function afficher() {
 }
 
 // ---------- graphique ----------
-document.querySelectorAll('.bascule button').forEach((b) => {
-  b.addEventListener('click', () => {
-    etat.periode = +b.dataset.periode;
-    document.querySelectorAll('.bascule button').forEach((x) => x.classList.toggle('actif', x === b));
-    dessinerGraphique();
+// Graduations et précision selon la durée choisie : plus la durée est courte, plus le détail est fin.
+const GRADUATION_MIN = { 1: 15, 2: 30, 4: 60, 6: 60, 12: 120, 24: 180 };
+
+function choisirPeriode(h) {
+  etat.periode = h;
+  stock.ecrire('periode', h);
+  document.querySelectorAll('.selecteur button').forEach((b) => {
+    const actif = +b.dataset.periode === h;
+    b.classList.toggle('actif', actif);
+    b.setAttribute('aria-checked', String(actif));
   });
-});
+  document.querySelectorAll('.horizon').forEach((t) => t.setAttribute('aria-pressed', String(+t.dataset.periode === h)));
+  dessinerGraphique();
+}
+
+document.querySelectorAll('.selecteur button').forEach((b) =>
+  b.addEventListener('click', () => choisirPeriode(+b.dataset.periode))
+);
+
+// Meilleure donnée disponible sur la fenêtre : quart d'heure tant qu'il existe, puis horaire.
+function seriePrecise(prev, debut, fin) {
+  const quarts = prev.quart.filter((p) => p.fin > debut && p.debut < fin && p.mm != null);
+  const couverture = quarts.length ? quarts[quarts.length - 1].fin : debut;
+  const heures = prev.heure.filter((p) => p.fin > couverture && p.debut < fin && p.mm != null);
+  return [...quarts, ...heures]
+    .map((p) => {
+      const d = Math.max(p.debut, debut, p.duree === 60 ? couverture : 0);
+      const f = Math.min(p.fin, fin);
+      return { debut: d, fin: f, mm: (p.mm * (f - d)) / (p.fin - p.debut), taux: p.taux, duree: p.duree };
+    })
+    .filter((p) => p.fin > p.debut);
+}
+
+const arrondi1 = (v) => Math.round(v * 10) / 10;
 
 function dessinerGraphique() {
   const prev = etat.prevision;
   const zone = $('#graphique');
   if (!prev) return;
+  const h = etat.periode;
+  document.querySelectorAll('.selecteur button').forEach((b) => {
+    const actif = +b.dataset.periode === h;
+    b.classList.toggle('actif', actif);
+    b.setAttribute('aria-checked', String(actif));
+  });
   const maintenant = Date.now();
-  const detail = etat.periode === 6;
-  const serie = (detail ? prev.quart : prev.heure)
-    .filter((p) => p.fin > maintenant && p.debut < maintenant + etat.periode * 3600000);
+  const finFenetre = maintenant + h * 3600000;
+  const serie = seriePrecise(prev, maintenant, finFenetre);
   if (!serie.length) {
-    zone.innerHTML = '<p class="vide">Pas de données</p>';
+    zone.innerHTML = '<p class="vide">Pas de données pour cette période</p>';
+    $('#resume-periode').textContent = '';
     return;
   }
-  const L = 340, H = 156, bas = 22, haut = 18, gauche = 28;
-  const largeur = (L - gauche) / serie.length;
+
+  // précision affichée
+  const finQuarts = serie.filter((p) => p.duree === 15).reduce((m, p) => Math.max(m, p.fin), 0);
+  $('#precision').textContent = finQuarts >= finFenetre - 60000
+    ? 'détail ¼ h'
+    : finQuarts > maintenant ? `¼ h jusqu'à ${heureCourte(finQuarts)}, puis horaire` : 'détail horaire';
+
+  // résumé
+  const r = resumer(prev, h, maintenant);
+  $('#resume-periode').innerHTML = r.niveau === 'sec'
+    ? `<b>Pas de pluie</b> prévue sur les ${h} prochaines heures.`
+    : `<b>${mm(r.total)}</b> sur ${h} h · pluie ${LIBELLES[r.niveau]} ${r.debut - maintenant < 120000 ? 'en cours' : `dès ${heureCourte(r.debut)}`}, jusqu'à ${heureCourte(r.fin)} · pic ${arrondi1(r.tauxMax).toLocaleString('fr-FR')} mm/h`;
+
+  // géométrie
+  const L = 340, H = 180, bas = 22, haut = 20, gauche = 30, droite = 34;
+  const largeurUtile = L - gauche - droite;
+  const x = (t) => gauche + ((t - maintenant) / (finFenetre - maintenant)) * largeurUtile;
+  const base = H - bas;
   const tauxMax = Math.max(4, ...serie.map((p) => p.taux || 0));
-  const echelle = (H - bas - haut) / tauxMax;
-  const graduations = [0, Math.round(tauxMax / 2), Math.round(tauxMax)];
-  let svg = `<svg viewBox="0 0 ${L} ${H}" role="img" aria-label="Intensité de pluie prévue">`;
-  for (const g of graduations) {
-    const y = H - bas - g * echelle;
-    svg += `<line x1="${gauche}" x2="${L}" y1="${y}" y2="${y}" class="grille"/><text x="${gauche - 4}" y="${y + 3}" class="axe" text-anchor="end">${g}</text>`;
+  const yTaux = (v) => base - (v / tauxMax) * (base - haut);
+  let cumul = 0;
+  const points = [[x(maintenant), 0]];
+  for (const p of serie) {
+    cumul += p.mm;
+    points.push([x(p.fin), cumul]);
   }
-  svg += `<text x="${gauche - 4}" y="8" class="axe" text-anchor="end">mm/h</text>`;
-  serie.forEach((p, i) => {
-    const x = gauche + i * largeur;
+  const cumulMax = Math.max(1, Math.ceil(cumul));
+  const yCumul = (v) => base - (v / cumulMax) * (base - haut);
+
+  let svg = `<svg viewBox="0 0 ${L} ${H}" role="img" aria-label="Pluie prévue sur ${h} heures">`;
+  // axes horizontaux (intensité à gauche, cumul à droite)
+  for (const f of [0, 0.5, 1]) {
+    const y = base - f * (base - haut);
+    svg += `<line x1="${gauche}" x2="${L - droite}" y1="${y}" y2="${y}" class="grille"/>`;
+    svg += `<text x="${gauche - 4}" y="${y + 3}" class="axe" text-anchor="end">${arrondi1(tauxMax * f).toLocaleString('fr-FR')}</text>`;
+    svg += `<text x="${L - droite + 4}" y="${y + 3}" class="axe axe-cumul">${arrondi1(cumulMax * f).toLocaleString('fr-FR')}</text>`;
+  }
+  svg += `<text x="${gauche - 4}" y="10" class="axe" text-anchor="end">mm/h</text>`;
+  svg += `<text x="${L - droite + 4}" y="10" class="axe axe-cumul">mm</text>`;
+
+  // graduations de temps alignées sur l'horloge
+  const pas = GRADUATION_MIN[h] * 60000;
+  const decalage = new Date(maintenant).getTimezoneOffset() * 60000;
+  let t = Math.ceil((maintenant - decalage) / pas) * pas + decalage;
+  for (; t <= finFenetre; t += pas) {
+    const xt = x(t);
+    if (xt - gauche < 26 || L - droite - xt < 6) continue;
+    const d = new Date(t);
+    const lib = d.getMinutes() ? `${d.getHours()}h${String(d.getMinutes()).padStart(2, '0')}` : `${d.getHours()}h`;
+    svg += `<line x1="${xt}" x2="${xt}" y1="${haut}" y2="${base + 3}" class="grille grille-temps"/><text x="${xt}" y="${H - 6}" class="axe" text-anchor="middle">${lib}</text>`;
+  }
+  svg += `<text x="${gauche}" y="${H - 6}" class="axe axe-maintenant">maint.</text>`;
+
+  // barres d'intensité, largeur proportionnelle à leur durée réelle
+  const etiquettes = h <= 2;
+  for (const p of serie) {
     const niveau = niveauDepuisTaux(p.taux);
-    const h = Math.max(niveau === 'sec' ? 0 : 2, (p.taux || 0) * echelle);
-    svg += `<rect x="${x + 0.6}" y="${H - bas - h}" width="${Math.max(1, largeur - 1.2)}" height="${h}" rx="1.5" data-niveau="${niveau}"><title>${heureCourte(p.debut)}–${heureCourte(p.fin)} : ${mm(p.mm || 0)} (${LIBELLES[niveau]})</title></rect>`;
-    const d = new Date(p.debut);
-    const etiquette = detail ? d.getMinutes() === 0 : d.getHours() % 3 === 0;
-    if (etiquette && x < L - 14) {
-      svg += `<line x1="${x}" x2="${x}" y1="${H - bas}" y2="${H - bas + 3}" class="grille"/><text x="${x}" y="${H - 6}" class="axe" text-anchor="${i === 0 ? 'start' : 'middle'}">${d.getHours()}h</text>`;
+    if (niveau === 'sec') continue;
+    const x0 = x(p.debut) + 0.6;
+    const l = Math.max(1, x(p.fin) - x(p.debut) - 1.2);
+    const y = Math.min(base - 2, yTaux(p.taux));
+    svg += `<rect x="${x0}" y="${y}" width="${l}" height="${base - y}" rx="1.5" data-niveau="${niveau}"><title>${heureCourte(p.debut)}–${heureCourte(p.fin)} : ${mm(arrondi1(p.mm))} (${LIBELLES[niveau]}, ${arrondi1(p.taux).toLocaleString('fr-FR')} mm/h)</title></rect>`;
+    if (etiquettes && p.mm >= 0.05 && l > 14) {
+      svg += `<text x="${x0 + l / 2}" y="${y - 3}" class="valeur" text-anchor="middle">${arrondi1(p.mm).toLocaleString('fr-FR')}</text>`;
     }
-  });
+  }
+
+  // courbe du cumul
+  if (cumul > 0) {
+    const chemin = points.map(([px, v], i) => `${i ? 'L' : 'M'}${px.toFixed(1)},${yCumul(v).toFixed(1)}`).join(' ');
+    svg += `<path d="${chemin}" class="courbe-cumul"/>`;
+  } else {
+    svg += `<text x="${gauche + largeurUtile / 2}" y="${(base + haut) / 2}" class="vide-svg" text-anchor="middle">Pas de pluie prévue</text>`;
+  }
   svg += '</svg>';
   zone.innerHTML = svg;
 }
