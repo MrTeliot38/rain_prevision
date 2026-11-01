@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 .DS_Store
 Thumbs.db
+apk/node_modules/
+apk/www/
+apk/android/
+*.keystore
+*.jks

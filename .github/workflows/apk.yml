@@ -1,0 +1,103 @@
+name: APK Android
+
+# Fabrique l'APK à chaque modification de l'appli, et la publie dans « Releases ».
+# Lien permanent vers la dernière version :
+# https://github.com/MrTeliot38/rain_prevision/releases/latest/download/PluieEnVue.apk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "css/**"
+      - "js/**"
+      - "icons/**"
+      - "vendor/**"
+      - "manifest.webmanifest"
+      - "apk/**"
+      - ".github/workflows/apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Préparer le projet Android
+        working-directory: apk
+        run: |
+          npm install --no-audit --no-fund
+          mkdir -p www
+          cp -r ../index.html ../css ../js ../icons ../vendor ../manifest.webmanifest www/
+          npx cap add android
+
+      - name: Icônes, écran de démarrage, permissions, version
+        working-directory: apk/android/app
+        run: |
+          RES=src/main/res
+          rm -rf $RES/mipmap-anydpi-v26
+          cp -r ../../res/mipmap-* $RES/
+          cp ../../res/drawable/ic_stat_pluie.xml $RES/drawable/
+          find $RES -name 'splash.png' -exec cp ../../res/splash.png {} \;
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>#' src/main/AndroidManifest.xml
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]+\"/versionName \"1.${{ github.run_number }}\"/" build.gradle
+          grep -E "versionCode|versionName" build.gradle
+
+      - name: Synchroniser
+        working-directory: apk
+        run: npx cap sync android
+
+      # Signature : si les secrets ANDROID_KEYSTORE (fichier .keystore en base64) et
+      # ANDROID_KEYSTORE_PASSWORD existent, l'APK est signé avec cette clé (mises à jour
+      # possibles par-dessus). Sinon, il est signé avec une clé de test générée à chaque fois.
+      - name: Compiler et signer
+        working-directory: apk/android
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          if [ -n "$KS" ] && [ -n "$KS_PASS" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/signature.keystore"
+            BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+            "$BT/zipalign" -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk aligne.apk
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/signature.keystore" --ks-pass env:KS_PASS --key-pass env:KS_PASS \
+              --out "$GITHUB_WORKSPACE/PluieEnVue.apk" aligne.apk
+            rm -f "$RUNNER_TEMP/signature.keystore"
+            echo "Signé avec la clé du dépôt."
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+            cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/PluieEnVue.apk"
+            echo "Signé avec une clé de test (pas de secret ANDROID_KEYSTORE)."
+          fi
+          ls -la "$GITHUB_WORKSPACE/PluieEnVue.apk"
+
+      - name: Publier dans Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: Pluie en vue 1.${{ github.run_number }}
+          make_latest: true
+          files: PluieEnVue.apk
+          body: |
+            APK Android de Pluie en vue (version 1.${{ github.run_number }}).
+            Télécharge **PluieEnVue.apk** ci-dessous depuis le téléphone, puis ouvre le fichier pour l'installer.

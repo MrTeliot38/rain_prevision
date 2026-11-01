@@ -28,6 +28,23 @@ Piste d'amélioration : le radar réel de Météo-France (« Paquet Radar », gr
 3. L'appli est alors disponible sur `https://mrteliot38.github.io/rain_prevision/`.
 4. Sur le téléphone, ouvre l'adresse dans Chrome, menu ⋮ → **Ajouter à l'écran d'accueil** (ou « Installer l'application »).
 
+## Application Android (APK)
+
+À chaque modification de l'appli, GitHub fabrique automatiquement un APK (workflow « APK Android ») et le publie dans **Releases**.
+
+- Lien direct vers la dernière version : <https://github.com/MrTeliot38/rain_prevision/releases/latest/download/PluieEnVue.apk>
+- Sur le téléphone : ouvre le lien, télécharge, puis ouvre le fichier. Android demande d'autoriser l'installation depuis Chrome (ou depuis l'appli Fichiers) : accepte pour cette fois.
+- L'APK utilise le GPS et les notifications natives d'Android. Les alertes appli fermée passent toujours par ntfy.
+
+**Mises à jour.** Par défaut, l'APK est signé avec une clé de test qui change à chaque fabrication : pour installer une nouvelle version, il faut d'abord désinstaller l'ancienne (le lieu et les alertes sont à refaire). Pour pouvoir installer les mises à jour par-dessus, ajoute une clé de signature à toi dans les secrets du dépôt :
+
+1. Sur un ordinateur avec Java, crée la clé (garde le fichier et le mot de passe précieusement, hors du dépôt) :
+   `keytool -genkeypair -keystore pluie.keystore -storetype PKCS12 -alias pluie -keyalg RSA -keysize 2048 -validity 10000`
+2. Convertis-la en texte (Windows PowerShell) :
+   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("pluie.keystore")) | Set-Clipboard`
+3. Secrets du dépôt : `ANDROID_KEYSTORE` (le texte copié) et `ANDROID_KEYSTORE_PASSWORD` (le mot de passe).
+4. Désinstalle une dernière fois l'appli, puis installe la nouvelle version : les suivantes s'installeront par-dessus.
+
 ## Alertes téléphone verrouillé (ntfy + GitHub Actions)
 
 Dans l'appli, les alertes ne fonctionnent que quand elle est ouverte. Pour les recevoir à tout moment :

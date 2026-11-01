@@ -5,6 +5,9 @@ import {
 import { Radar, formatDuree } from './radar.js';
 
 const $ = (s) => document.querySelector(s);
+// Dans l'APK Android (Capacitor), on passe par les modules natifs pour la position et les notifications.
+const NATIF = !!window.Capacitor?.isNativePlatform?.();
+const PLUGINS = window.Capacitor?.Plugins || {};
 const HORIZONS = [1, 2, 4, 12, 24];
 const RAFRAICHISSEMENT = 10 * 60000;
 
@@ -92,28 +95,30 @@ function definirLieu(lieu) {
   actualiser();
 }
 
-$('#btn-gps').addEventListener('click', () => {
+function obtenirPosition() {
+  const options = { enableHighAccuracy: false, timeout: 15000, maximumAge: 5 * 60000 };
+  if (NATIF && PLUGINS.Geolocation) return PLUGINS.Geolocation.getCurrentPosition(options).then((p) => p.coords);
+  if (!navigator.geolocation) return Promise.reject(new Error('indisponible'));
+  return new Promise((ok, ko) => navigator.geolocation.getCurrentPosition((p) => ok(p.coords), ko, options));
+}
+
+$('#btn-gps').addEventListener('click', async () => {
   const info = $('#dialogue-etat');
-  if (!navigator.geolocation) {
-    info.textContent = 'La géolocalisation n\'est pas disponible sur cet appareil.';
-    return;
-  }
   info.textContent = 'Recherche de ta position…';
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude: lat, longitude: lon } = pos.coords;
-      const nom = (await nomDuLieu(lat, lon)) || 'Ma position';
-      info.textContent = '';
-      dialogue.close();
-      definirLieu({ nom, lat, lon, gps: true });
-    },
-    (err) => {
-      info.textContent = err.code === 1
-        ? 'Accès à la position refusé. Autorise-le dans les réglages du navigateur, ou cherche une ville.'
-        : 'Position introuvable pour le moment. Réessaie ou cherche une ville.';
-    },
-    { enableHighAccuracy: false, timeout: 15000, maximumAge: 5 * 60000 }
-  );
+  try {
+    const { latitude: lat, longitude: lon } = await obtenirPosition();
+    const nom = (await nomDuLieu(lat, lon)) || 'Ma position';
+    info.textContent = '';
+    dialogue.close();
+    definirLieu({ nom, lat, lon, gps: true });
+  } catch (err) {
+    const refus = err?.code === 1 || /denied|permission|refus/i.test(err?.message || '');
+    info.textContent = refus
+      ? `Accès à la position refusé. Autorise-le dans les réglages ${NATIF ? 'du téléphone (Applis → Pluie en vue → Autorisations)' : 'du navigateur'}, ou cherche une ville.`
+      : err?.message === 'indisponible'
+        ? 'La géolocalisation n\'est pas disponible sur cet appareil.'
+        : 'Position introuvable pour le moment. Vérifie que la localisation est activée, ou cherche une ville.';
+  }
 });
 
 let minuterieRecherche;
@@ -268,26 +273,44 @@ function dessinerGraphique() {
 }
 
 // ---------- alertes dans l'appli ----------
-function majFormulaireAlerte() {
+async function permissionNotifs() {
+  if (NATIF && PLUGINS.LocalNotifications) {
+    const { display } = await PLUGINS.LocalNotifications.checkPermissions();
+    return display === 'granted' ? 'granted' : display === 'denied' ? 'denied' : 'default';
+  }
+  return 'Notification' in window ? Notification.permission : 'indisponible';
+}
+
+async function majFormulaireAlerte() {
   $('#alerte-active').checked = etat.alerte.active;
   $('#alerte-seuil').value = etat.alerte.seuil;
   $('#alerte-avance').value = String(etat.alerte.avance);
-  const n = 'Notification' in window ? Notification.permission : 'indisponible';
+  const n = await permissionNotifs().catch(() => 'indisponible');
   $('#etat-notifs').textContent = {
     granted: 'Notifications autorisées. L\'appli vérifie toutes les 10 minutes tant qu\'elle est ouverte.',
-    denied: 'Notifications bloquées : autorise-les dans les réglages du navigateur pour ce site.',
+    denied: `Notifications bloquées : autorise-les dans les réglages ${NATIF ? 'du téléphone' : 'du navigateur pour ce site'}.`,
     default: 'Les notifications seront demandées à l\'activation.',
     indisponible: 'Ce navigateur ne gère pas les notifications. Installe l\'appli sur l\'écran d\'accueil.',
   }[n];
 }
 
 async function demanderNotifs() {
+  if (NATIF && PLUGINS.LocalNotifications) {
+    const { display } = await PLUGINS.LocalNotifications.requestPermissions();
+    return display === 'granted';
+  }
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
   return (await Notification.requestPermission()) === 'granted';
 }
 
 async function notifier(titre, corps, tag) {
+  if (NATIF && PLUGINS.LocalNotifications) {
+    await PLUGINS.LocalNotifications.schedule({
+      notifications: [{ id: Math.floor(Date.now() / 1000) % 2147483647, title: titre, body: corps }],
+    });
+    return;
+  }
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const options = { body: corps, tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: true };
   const reg = await navigator.serviceWorker?.getRegistration();
@@ -396,7 +419,7 @@ $('#btn-copier-config').addEventListener('click', async () => {
 });
 
 // ---------- démarrage ----------
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if (!NATIF && 'serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
