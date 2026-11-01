@@ -18,18 +18,30 @@
       <img src="icons/icon.svg" alt="" width="30" height="30">
       <span>Pluie en vue</span>
     </div>
-    <button id="btn-lieu" class="btn-lieu" type="button">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
-      <span id="nom-lieu">Choisir un lieu</span>
-    </button>
+    <div class="entete-actions">
+      <button id="btn-lieu" class="btn-lieu" type="button" aria-label="Changer de lieu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="nom-lieu">Choisir un lieu</span>
+      </button>
+      <button id="btn-actualiser" class="btn-icone" type="button" aria-label="Actualiser">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+      </button>
+    </div>
   </header>
 
   <main>
     <!-- PRÉVISIONS -->
     <section id="vue-previsions" class="vue active" aria-label="Prévisions">
-      <div id="bandeau" class="bandeau" data-niveau="inconnu">
-        <div class="bandeau-titre" id="bandeau-titre">Chargement des prévisions…</div>
-        <div class="bandeau-detail" id="bandeau-detail"></div>
+      <div id="bandeau" class="bandeau" data-niveau="inconnu" aria-live="polite">
+        <div class="bandeau-haut">
+          <div class="bandeau-icone" id="bandeau-icone" aria-hidden="true"></div>
+          <div>
+            <div class="bandeau-titre" id="bandeau-titre">Chargement des prévisions…</div>
+            <div class="bandeau-detail" id="bandeau-detail"></div>
+          </div>
+        </div>
+        <div class="ruban" id="ruban" aria-label="Pluie dans les 2 prochaines heures"></div>
+        <div class="bandeau-source" id="bandeau-source"></div>
       </div>
 
       <div class="horizons" id="horizons"></div>
@@ -71,11 +83,17 @@
           </div>
         </div>
         <input id="radar-curseur" type="range" min="0" max="0" value="0" aria-label="Heure affichée">
-        <div class="radar-legende">
+        <div class="radar-legende" aria-label="Échelle d'intensité en millimètres par heure">
           <span class="degrade"></span>
-          <span>faible</span><span>modérée</span><span>forte</span>
+          <div class="graduations"><span>0,1</span><span>0,3</span><span>1,3</span><span>2,7</span><span>6</span><span>12</span><span>25 mm/h</span></div>
+          <div class="categories"><span>faible</span><span>modérée</span><span>forte</span></div>
         </div>
-        <p class="radar-note">Avant maintenant : radar réellement observé. Après : prévision du modèle Météo-France AROME par quart d'heure, dans le cadre pointillé autour de toi.</p>
+        <details class="radar-note">
+          <summary>Comment lire l'animation ?</summary>
+          <p><b>Radar observé</b> : ce que les radars ont réellement mesuré (2 dernières heures).<br>
+          <b>Prévision radar</b> : la dernière image radar prolongée selon le déplacement des averses (1 h).<br>
+          <b>Prévision modèle</b> : modèle Météo-France AROME au quart d'heure, dans le cadre pointillé autour de toi.</p>
+        </details>
         <p id="radar-etat" class="radar-etat"></p>
       </div>
     </section>
@@ -88,6 +106,7 @@
           <input type="checkbox" id="alerte-active">
           <span>Me prévenir avant la pluie</span>
         </label>
+        <p class="aide">Fonctionne à ta position du moment, tant que l'appli est ouverte (même en arrière-plan quelques minutes).</p>
         <div class="champs">
           <label>Pluie au moins
             <select id="alerte-seuil">
@@ -109,7 +128,11 @@
         <button type="button" class="btn-secondaire" id="btn-test-notif">Tester une notification</button>
       </div>
 
-      <div class="bloc">
+      <details class="bloc avance">
+        <summary>
+          <span><b>Alertes appli fermée</b><small>Service ntfy relié au dépôt GitHub · réglage avancé</small></span>
+        </summary>
+        <p class="aide">Ces alertes sont envoyées par un service qui tourne sur GitHub, pour <b>un seul lieu</b> (celui enregistré dans les secrets du dépôt), à tous les téléphones abonnés au sujet <b>ntfy</b>. Les réglages ci-dessous servent à préparer le fichier <code>alertes/config.json</code>.</p>
         <h2>Alertes programmées</h2>
         <p class="aide">Exemple : chaque matin de semaine à 7 h, la pluie prévue sur les 12 prochaines heures.</p>
         <ul id="liste-programmees" class="liste-programmees"></ul>
@@ -149,14 +172,11 @@
           <label class="interrupteur"><input type="checkbox" name="si_sec" checked><span>Envoyer aussi s'il ne pleut pas</span></label>
           <button type="submit" class="btn-principal">Ajouter l'alerte</button>
         </form>
-      </div>
-
-      <div class="bloc">
-        <h2>Recevoir les alertes appli fermée</h2>
-        <p class="aide">Dans l'appli, les alertes ne fonctionnent que quand elle est ouverte. Pour les recevoir téléphone verrouillé, un petit service tourne gratuitement sur GitHub et t'envoie les alertes via l'appli <b>ntfy</b>. Les réglages ci-dessus sont à recopier dans le fichier <code>alertes/config.json</code> du dépôt (voir le README).</p>
+        <h2 class="sous-titre">Envoyer au service</h2>
+        <p class="aide">Copie la configuration (alerte imminente + alertes programmées) et colle-la dans <code>alertes/config.json</code> sur GitHub.</p>
         <button type="button" class="btn-secondaire" id="btn-copier-config">Copier la configuration</button>
         <textarea id="config-json" class="config-json" readonly rows="8" hidden></textarea>
-      </div>
+      </details>
     </section>
   </main>
 

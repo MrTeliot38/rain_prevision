@@ -7,7 +7,7 @@ const API_LIEU_INVERSE = 'https://api.bigdatacloud.net/data/reverse-geocode-clie
 // Intensité en mm/h (seuils usuels : < 2,5 faible, 2,5–7,6 modérée, > 7,6 forte).
 export const NIVEAUX = ['sec', 'faible', 'moderee', 'forte'];
 export const LIBELLES = { sec: 'Sec', faible: 'faible', moderee: 'modérée', forte: 'forte' };
-const SEUIL_PLUIE = 0.2; // mm/h en dessous : traces, considéré comme sec
+const SEUIL_PLUIE = 0.1; // mm/h en dessous : considéré comme sec (bruine très légère comprise au-dessus)
 
 export function niveauDepuisTaux(mmParHeure) {
   if (mmParHeure == null || mmParHeure < SEUIL_PLUIE) return 'sec';
@@ -79,6 +79,7 @@ export function resumer(prev, heures, maintenant = Date.now()) {
     // part de l'intervalle comprise dans la fenêtre (le premier pas est souvent entamé)
     const debut = Math.max(p.debut, maintenant, p.duree === 60 ? couverture : 0);
     const fin = Math.min(p.fin, limite);
+    if (fin <= debut) continue; // pas horaire entièrement couvert par le détail au quart d'heure
     const part = (fin - debut) / (p.fin - p.debut);
     total += p.mm * part;
     if (niveauDepuisTaux(p.taux) !== 'sec') {
@@ -89,7 +90,7 @@ export function resumer(prev, heures, maintenant = Date.now()) {
   }
   return {
     heures,
-    total: Math.round(total * 10) / 10,
+    total: Math.round(total * 100) / 100,
     niveau: niveauDepuisTaux(tauxMax),
     tauxMax,
     debut: premier ? Math.max(premier.debut, maintenant) : null,
@@ -122,7 +123,7 @@ export function prochainePluie(prev, niveauMin = 'faible', maintenant = Date.now
     enCours: pas[idx].debut <= maintenant,
     niveau: niveauDepuisTaux(tauxMax),
     tauxMax,
-    total: Math.round(total * 10) / 10,
+    total: Math.round(total * 100) / 100,
   };
 }
 

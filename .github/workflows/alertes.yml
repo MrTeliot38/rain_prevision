@@ -24,6 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: alertes/requirements.txt
+
+      - name: Installer numpy et Pillow (lecture du radar)
+        run: pip install --quiet -r alertes/requirements.txt
+
       - name: Vérifier la pluie et envoyer les alertes
         env:
           LATITUDE: ${{ secrets.LATITUDE }}
@@ -34,9 +43,9 @@ jobs:
           FORCER: ${{ github.event.inputs.forcer }}
         run: |
           if [ -n "$FORCER" ]; then
-            python3 alertes/alertes.py --forcer "$FORCER"
+            python alertes/alertes.py --forcer "$FORCER"
           else
-            python3 alertes/alertes.py
+            python alertes/alertes.py
           fi
 
       - name: Mémoriser les alertes envoyées

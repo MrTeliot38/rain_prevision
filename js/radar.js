@@ -9,12 +9,16 @@ const OPACITE = 0.75;
 
 // Palette de la prévision, en mm/h (même découpage que les niveaux faible / modérée / forte).
 export const PALETTE = [
-  { min: 0.2, couleur: [125, 211, 252], alpha: 150 },
-  { min: 1, couleur: [56, 189, 248], alpha: 175 },
-  { min: 2.5, couleur: [37, 99, 235], alpha: 195 },
-  { min: 5, couleur: [30, 64, 175], alpha: 210 },
-  { min: 7.6, couleur: [234, 179, 8], alpha: 220 },
-  { min: 15, couleur: [225, 29, 72], alpha: 230 },
+  // mêmes teintes que le radar observé (palette « Universal Blue » de RainViewer)
+  { min: 0.1, couleur: [222, 208, 151], alpha: 170 },
+  { min: 0.3, couleur: [136, 221, 238], alpha: 215 },
+  { min: 0.65, couleur: [0, 163, 224], alpha: 225 },
+  { min: 1.3, couleur: [0, 119, 170], alpha: 230 },
+  { min: 2.7, couleur: [0, 85, 136], alpha: 235 },
+  { min: 5.6, couleur: [255, 238, 0], alpha: 240 },
+  { min: 11.5, couleur: [255, 170, 0], alpha: 240 },
+  { min: 24, couleur: [255, 68, 0], alpha: 245 },
+  { min: 49, couleur: [193, 0, 0], alpha: 245 },
 ];
 
 function couleurPour(taux) {
@@ -105,8 +109,14 @@ export class Radar {
     this.images = [];
 
     const [obs, prev] = await Promise.allSettled([this.chargerObservations(), this.chargerPrevisions()]);
+    const immediat = this.imagesNowcast();
     if (obs.status === 'fulfilled') this.images.push(...obs.value);
-    if (prev.status === 'fulfilled') this.images.push(...prev.value);
+    this.images.push(...immediat);
+    if (prev.status === 'fulfilled') {
+      // la première heure vient du radar extrapolé quand il est disponible
+      const finRadar = immediat.length ? immediat[immediat.length - 1].t : 0;
+      this.images.push(...prev.value.filter((im) => im.t > finRadar));
+    }
     this.images.sort((a, b) => a.t - b.t);
     for (const im of this.images) im.couche.addTo(this.carte);
 
@@ -162,6 +172,31 @@ export class Radar {
     return images;
   }
 
+  definirNowcast(nc) {
+    this.nowcast = nc;
+    this.grilleChargee = 0; // forcer le rechargement de l'animation
+  }
+
+  // Images « prévision radar » : la dernière image observée, déplacée selon le mouvement mesuré.
+  imagesNowcast() {
+    const nc = this.nowcast;
+    if (!nc || !nc.fiable) return [];
+    const url = dessinerChamp(nc.champ, nc.taille);
+    const dLon = (nc.bornes.est - nc.bornes.ouest) / nc.taille;
+    const dLat = (nc.bornes.nord - nc.bornes.sud) / nc.taille;
+    const maintenant = Date.now();
+    const images = [];
+    for (let k = 1; k <= 6; k++) {
+      const t = nc.t0 + k * 600000;
+      if (t <= maintenant) continue;
+      const decX = nc.vitesse.vx * k * dLon;
+      const decY = -nc.vitesse.vy * k * dLat;
+      const b = [[nc.bornes.sud + decY, nc.bornes.ouest + decX], [nc.bornes.nord + decY, nc.bornes.est + decX]];
+      images.push({ t, type: 'nowcast', couche: L.imageOverlay(url, b, { opacity: 0, zIndex: 6 }) });
+    }
+    return images;
+  }
+
   afficher(i) {
     if (!this.images.length) return;
     this.index = i;
@@ -173,7 +208,7 @@ export class Radar {
     const ecart = Math.round((im.t - Date.now()) / 60000);
     const relatif = ecart > 0 ? `dans ${formatDuree(ecart)}` : ecart > -5 ? 'maintenant' : `il y a ${formatDuree(-ecart)}`;
     this.ctrl.libelle.innerHTML = `<b>${heure}</b> · ${relatif}`;
-    this.ctrl.type.textContent = im.type === 'obs' ? 'Radar observé' : 'Prévision';
+    this.ctrl.type.textContent = { obs: 'Radar observé', nowcast: 'Prévision radar', prev: 'Prévision modèle' }[im.type];
     this.ctrl.type.dataset.type = im.type;
   }
 
@@ -202,6 +237,24 @@ export function formatDuree(min) {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
+}
+
+// Champ radar (mm/h) → image colorée avec la même palette que la prévision.
+function dessinerChamp(champ, taille) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = taille;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(taille, taille);
+  for (let k = 0; k < champ.length; k++) {
+    const c = couleurPour(champ[k]);
+    if (!c) continue;
+    img.data[k * 4] = c.couleur[0];
+    img.data[k * 4 + 1] = c.couleur[1];
+    img.data[k * 4 + 2] = c.couleur[2];
+    img.data[k * 4 + 3] = c.alpha;
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas.toDataURL('image/png');
 }
 
 // Interpolation bilinéaire de la grille n×n (cumuls 15 min) vers une image.

@@ -70,6 +70,20 @@ h2 { font-size: 1rem; margin: 0 0 12px; }
 }
 .btn-lieu span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .btn-lieu svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; }
+.entete-actions { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 65%; }
+.entete-actions .btn-lieu { max-width: none; min-width: 0; }
+.btn-icone {
+  width: 38px; height: 38px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+}
+.btn-icone svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.btn-icone.tourne svg { animation: tourne 0.9s linear infinite; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn-icone.tourne svg { animation: none; opacity: .5; } }
 
 /* ---------- vues ---------- */
 main { flex: 1; overflow-y: auto; }
@@ -102,7 +116,21 @@ main { flex: 1; overflow-y: auto; }
 .bandeau[data-niveau="moderee"] { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
 .bandeau[data-niveau="forte"] { background: linear-gradient(135deg, #9f1239, #e11d48); }
 .bandeau-titre { font-size: 1.35rem; font-weight: 700; line-height: 1.25; }
+.bandeau-haut { display: flex; align-items: center; gap: 14px; }
+.bandeau-icone { width: 52px; height: 52px; flex: none; color: #fff; }
+.bandeau-icone svg { width: 100%; height: 100%; display: block; }
+.ruban { margin-top: 14px; }
+.ruban:empty { display: none; }
+.ruban svg { width: 100%; height: 46px; display: block; }
+.ruban-base { stroke: rgb(255 255 255 / 45%); stroke-width: 1; }
+.ruban-barre { fill: #fff; opacity: .55; }
+.ruban-barre[data-niveau="moderee"] { opacity: .8; }
+.ruban-barre[data-niveau="forte"] { opacity: 1; }
+.ruban-reperes { display: flex; justify-content: space-between; font-size: .68rem; opacity: .85; margin-top: -10px; }
 .bandeau-detail { margin-top: 4px; opacity: .92; }
+.bandeau-source { margin-top: 8px; font-size: .75rem; opacity: .8; }
+.bandeau-source:empty { display: none; }
+.pastille[data-type="nowcast"] { background: #ede9fe; color: #5b21b6; }
 
 /* tuiles 1 h … 24 h */
 .horizons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -185,13 +213,28 @@ main { flex: 1; overflow-y: auto; }
 .pastille[data-type="obs"] { background: #dcfce7; color: #166534; }
 .pastille[data-type="prev"] { background: #dbeafe; color: #1e40af; }
 #radar-curseur { width: 100%; margin: 12px 0 6px; accent-color: var(--accent); }
-.radar-legende { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: .7rem; color: var(--doux); text-align: center; }
+.radar-legende { font-size: .68rem; color: var(--doux); }
 .radar-legende .degrade {
-  grid-column: 1 / -1; height: 8px; border-radius: 4px; margin-bottom: 3px;
-  background: linear-gradient(90deg, #7dd3fc, #38bdf8 20%, #2563eb 45%, #1e40af 60%, #eab308 78%, #e11d48);
+  display: block; height: 9px; border-radius: 5px;
+  background: linear-gradient(90deg, #ded097 0%, #88ddee 16.6%, #00a3e0 25%, #0077aa 33.3%, #005588 50%, #ffee00 66.6%, #ffaa00 83.3%, #ff4400 100%);
 }
-.radar-note, .radar-etat { font-size: .72rem; color: var(--doux); margin: 8px 0 0; }
+.radar-legende .graduations { display: flex; justify-content: space-between; margin-top: 3px; }
+.radar-legende .categories { display: grid; grid-template-columns: 48% 22% 30%; margin-top: 2px; text-align: center; border-top: 1px solid var(--bord); padding-top: 2px; }
+.radar-note, .radar-etat { font-size: .74rem; color: var(--doux); margin: 8px 0 0; }
+.radar-note summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.radar-note p { margin: 6px 0 0; line-height: 1.45; }
 .radar-etat:empty { display: none; }
+
+/* section avancée de l'onglet Alertes */
+details.avance > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+details.avance > summary::-webkit-details-marker { display: none; }
+details.avance > summary::after { content: '▾'; color: var(--doux); transition: transform .2s; }
+details.avance[open] > summary::after { transform: rotate(180deg); }
+details.avance > summary small { display: block; color: var(--doux); font-size: .78rem; font-weight: 400; margin-top: 2px; }
+details.avance[open] > summary { margin-bottom: 8px; }
+.sous-titre { margin-top: 18px; }
+.maj { cursor: pointer; line-height: 1.5; }
+.maj u { color: var(--accent); text-decoration: none; font-weight: 600; }
 
 /* ---------- alertes ---------- */
 .champs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }

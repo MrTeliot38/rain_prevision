@@ -1,5 +1,5 @@
 // Service worker : l'appli s'ouvre même hors connexion (les prévisions, elles, viennent du réseau).
-const VERSION = 'pluie-v3';
+const VERSION = 'pluie-v4';
 const FICHIERS = [
   './',
   'index.html',
@@ -8,6 +8,7 @@ const FICHIERS = [
   'js/meteo.js',
   'js/radar.js',
   'js/config.js',
+  'js/nowcast.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',

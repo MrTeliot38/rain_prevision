@@ -14,6 +14,7 @@ Options :
   --simulation F.json     utilise une réponse Open-Meteo enregistrée au lieu du réseau
   --maintenant ISO        fixe l'heure courante (tests)
   --forcer NOM            envoie tout de suite l'alerte programmée NOM (test)
+  --sans-radar            n'utilise que le modèle (sans prévision immédiate par radar)
 """
 import argparse
 import json
@@ -24,6 +25,8 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 DOSSIER = Path(__file__).resolve().parent
 CONFIG = DOSSIER / "config.json"
@@ -37,7 +40,7 @@ JOURS = ["lun", "mar", "mer", "jeu", "ven", "sam", "dim"]
 
 
 def niveau(taux):
-    if taux is None or taux < 0.2:
+    if taux is None or taux < 0.1:
         return "sec"
     if taux < 2.5:
         return "faible"
@@ -88,7 +91,9 @@ def resumer(quarts, heures, maintenant, nb_heures):
     for p in q + h:
         debut = max(p["debut"], maintenant, couverture if p["duree"] == 60 else p["debut"])
         fin = min(p["fin"], limite)
-        part = max(0.0, (fin - debut) / (p["fin"] - p["debut"]))
+        if fin <= debut:
+            continue  # pas horaire entièrement couvert par le détail au quart d'heure
+        part = (fin - debut) / (p["fin"] - p["debut"])
         total += p["mm"] * part
         if niveau(p["taux"]) != "sec":
             premier = premier or p
@@ -193,6 +198,7 @@ def main():
     ap.add_argument("--simulation")
     ap.add_argument("--maintenant")
     ap.add_argument("--forcer")
+    ap.add_argument("--sans-radar", action="store_true")
     args = ap.parse_args()
 
     try:
@@ -215,6 +221,17 @@ def main():
     donnees = charger(lat, lon, args.simulation)
     quarts = serie(donnees.get("minutely_15"), 15)
     heures = serie(donnees.get("hourly"), 60)
+
+    # les 2 premières heures s'appuient sur le radar observé (les modèles ratent souvent les pluies faibles)
+    if not args.simulation and not args.sans_radar:
+        try:
+            import radar
+            nc = radar.prevoir(lat, lon)
+            quarts = radar.fusionner(quarts, nc, maintenant)
+            print(f"Radar de {nc['t0'].astimezone(FUSEAU):%H:%M} : {nc['pas'][0]['taux']:.2f} mm/h ici"
+                  + (" (déplacement mesuré)" if nc["fiable"] else ""))
+        except Exception as e:  # le radar est un plus : sans lui, on garde le modèle
+            print(f"Radar indisponible ({e}) : modèle seul.")
     modifie = False
 
     # 1. pluie imminente
