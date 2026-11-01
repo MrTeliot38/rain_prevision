@@ -1,10 +1,10 @@
 // Service worker : l'appli s'ouvre même hors connexion (les prévisions, elles, viennent du réseau).
-const VERSION = 'pluie-v4';
+const VERSION = 'pluie-v5';
 const FICHIERS = [
   './',
   'index.html',
-  'css/style.css',
-  'js/app.js',
+  'css/style.css?v=5',
+  'js/app.js?v=5',
   'js/meteo.js',
   'js/radar.js',
   'js/config.js',
@@ -34,7 +34,7 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // API et tuiles : réseau direct
   // réseau d'abord (pour avoir les mises à jour), cache en secours
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' }) // revalide auprès du serveur (GitHub Pages met 10 min en cache)
       .then((rep) => {
         const copie = rep.clone();
         caches.open(VERSION).then((c) => c.put(e.request, copie));
