@@ -24,9 +24,10 @@ Piste d'amélioration : le radar réel de Météo-France (« Paquet Radar », gr
 ## Mettre l'appli en ligne (GitHub Pages)
 
 1. Le dépôt doit être **public** (GitHub Pages est gratuit uniquement pour les dépôts publics ; aucune donnée personnelle n'est dans le code).
-2. *Settings → Pages → Build and deployment* : **Deploy from a branch**, branche `main`, dossier `/ (root)`.
-3. L'appli est alors disponible sur `https://mrteliot38.github.io/rain_prevision/`.
-4. Sur le téléphone, ouvre l'adresse dans Chrome, menu ⋮ → **Ajouter à l'écran d'accueil** (ou « Installer l'application »).
+2. *Settings → Pages → Build and deployment* : Source **GitHub Actions** (le workflow « Mise en ligne » publie le site).
+3. Fond de carte CARTO : ajoute la clé dans le secret **`CARTO_KEY`** (*Settings → Secrets and variables → Actions*). Elle est insérée au moment de la mise en ligne et de la fabrication de l'APK, jamais écrite dans le dépôt. Sans clé, la carte utilise le fond OpenStreetMap.
+4. L'appli est alors disponible sur `https://mrteliot38.github.io/rain_prevision/`.
+5. Sur le téléphone, ouvre l'adresse dans Chrome, menu ⋮ → **Ajouter à l'écran d'accueil** (ou « Installer l'application »).
 
 ## Application Android (APK)
 

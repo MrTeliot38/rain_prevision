@@ -1,0 +1,49 @@
+name: Mise en ligne
+
+# Publie l'appli sur GitHub Pages en y insérant la clé CARTO (secret CARTO_KEY).
+# Réglage nécessaire une fois : Settings → Pages → Source : « GitHub Actions ».
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "alertes/etat.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Préparer le site
+        env:
+          CARTO_KEY: ${{ secrets.CARTO_KEY }}
+        run: |
+          mkdir -p _site
+          cp -r index.html css js icons vendor manifest.webmanifest sw.js .nojekyll _site/
+          if [ -n "$CARTO_KEY" ]; then
+            printf "export const CLE_CARTO = '%s';\n" "$CARTO_KEY" > _site/js/config.js
+            echo "Clé CARTO insérée."
+          else
+            echo "Pas de secret CARTO_KEY : fond de carte OpenStreetMap."
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploiement
+        uses: actions/deploy-pages@v4

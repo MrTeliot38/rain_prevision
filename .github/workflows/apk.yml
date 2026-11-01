@@ -43,10 +43,15 @@ jobs:
 
       - name: Préparer le projet Android
         working-directory: apk
+        env:
+          CARTO_KEY: ${{ secrets.CARTO_KEY }}
         run: |
           npm install --no-audit --no-fund
           mkdir -p www
           cp -r ../index.html ../css ../js ../icons ../vendor ../manifest.webmanifest www/
+          if [ -n "$CARTO_KEY" ]; then
+            printf "export const CLE_CARTO = '%s';\n" "$CARTO_KEY" > www/js/config.js
+          fi
           npx cap add android
 
       - name: Icônes, écran de démarrage, permissions, version

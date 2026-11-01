@@ -2,6 +2,7 @@
 // puis prévision quart d'heure par quart d'heure (modèle AROME via Open-Meteo).
 /* global L */
 import { grilleAutour, chargerGrille } from './meteo.js';
+import { CLE_CARTO } from './config.js';
 
 const RAINVIEWER = 'https://api.rainviewer.com/public/weather-maps.json';
 const OPACITE = 0.75;
@@ -30,11 +31,15 @@ export class Radar {
     this.lecture = null;
     this.grilleChargee = 0;
     this.carte = L.map(conteneur, { zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 13,
-      subdomains: 'abcd',
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-    }).addTo(this.carte);
+    const osm = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+    if (CLE_CARTO) {
+      L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=${CLE_CARTO}`, {
+        maxZoom: 13,
+        attribution: `${osm} © <a href="https://carto.com/attributions">CARTO</a>`,
+      }).addTo(this.carte);
+    } else {
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 13, attribution: osm }).addTo(this.carte);
+    }
     this.carte.attributionControl.addAttribution(
       'Radar <a href="https://www.rainviewer.com/">RainViewer</a> · Prévision Météo-France via <a href="https://open-meteo.com/">Open-Meteo</a>'
     );
