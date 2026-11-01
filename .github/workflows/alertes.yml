@@ -1,0 +1,50 @@
+name: Alertes pluie
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # toutes les 10 min (GitHub peut décaler de quelques minutes)
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Envoyer tout de suite une alerte programmée (nom exact, ex. Matin)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: alertes
+  cancel-in-progress: false
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier la pluie et envoyer les alertes
+        env:
+          LATITUDE: ${{ secrets.LATITUDE }}
+          LONGITUDE: ${{ secrets.LONGITUDE }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVEUR: ${{ vars.NTFY_SERVEUR }}
+          LIEU_NOM: ${{ vars.LIEU_NOM }}
+          FORCER: ${{ github.event.inputs.forcer }}
+        run: |
+          if [ -n "$FORCER" ]; then
+            python3 alertes/alertes.py --forcer "$FORCER"
+          else
+            python3 alertes/alertes.py
+          fi
+
+      - name: Mémoriser les alertes envoyées
+        run: |
+          if [ -n "$(git status --porcelain alertes/etat.json)" ]; then
+            git config user.name "alertes-pluie"
+            git config user.email "actions@users.noreply.github.com"
+            git add alertes/etat.json
+            git commit -m "Alertes : mise à jour de l'état [skip ci]"
+            git push
+          fi

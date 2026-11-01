@@ -1,0 +1,266 @@
+:root {
+  --fond: #eef3fa;
+  --surface: #ffffff;
+  --texte: #0f1b2d;
+  --doux: #5b6b82;
+  --bord: #d9e2ef;
+  --accent: #0f3d91;
+  --accent-texte: #ffffff;
+  --sec: #3f8f6b;
+  --faible: #38bdf8;
+  --moderee: #2563eb;
+  --forte: #e11d48;
+  --ombre: 0 1px 2px rgb(15 27 45 / 6%), 0 4px 16px rgb(15 27 45 / 6%);
+  --rayon: 16px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fond: #0b1220;
+    --surface: #131c2e;
+    --texte: #e6edf7;
+    --doux: #93a3bb;
+    --bord: #24324a;
+    --accent: #5b8def;
+    --sec: #5cc29a;
+    --faible: #67d2ff;
+    --moderee: #5b8def;
+    --forte: #fb5476;
+    --ombre: none;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fond);
+  color: var(--texte);
+  display: flex;
+  flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h2 { font-size: 1rem; margin: 0 0 12px; }
+
+/* ---------- entête ---------- */
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--accent);
+  color: #fff;
+}
+.marque { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.05rem; }
+.btn-lieu {
+  display: flex; align-items: center; gap: 6px;
+  max-width: 60%;
+  border: 1px solid rgb(255 255 255 / 35%);
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.btn-lieu span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-lieu svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; }
+
+/* ---------- vues ---------- */
+main { flex: 1; overflow-y: auto; }
+.vue { display: none; padding: 16px; max-width: 640px; margin: 0 auto; }
+.vue.active { display: block; }
+#vue-radar.active { display: flex; flex-direction: column; height: 100%; max-width: none; padding: 0; }
+
+.bloc {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.bloc-entete { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bloc-entete h2 { margin: 0; }
+
+/* bandeau « maintenant » */
+.bandeau {
+  border-radius: var(--rayon);
+  padding: 18px;
+  margin-bottom: 16px;
+  color: #fff;
+  background: var(--doux);
+  box-shadow: var(--ombre);
+}
+.bandeau[data-niveau="sec"] { background: linear-gradient(135deg, #2f7d5c, #3f9f77); }
+.bandeau[data-niveau="faible"] { background: linear-gradient(135deg, #0284c7, #38bdf8); }
+.bandeau[data-niveau="moderee"] { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
+.bandeau[data-niveau="forte"] { background: linear-gradient(135deg, #9f1239, #e11d48); }
+.bandeau-titre { font-size: 1.35rem; font-weight: 700; line-height: 1.25; }
+.bandeau-detail { margin-top: 4px; opacity: .92; }
+
+/* tuiles 1 h … 24 h */
+.horizons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+.horizon {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-top: 4px solid var(--sec);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.horizon[data-niveau="faible"] { border-top-color: var(--faible); }
+.horizon[data-niveau="moderee"] { border-top-color: var(--moderee); }
+.horizon[data-niveau="forte"] { border-top-color: var(--forte); }
+.horizon-duree { font-size: .8rem; color: var(--doux); font-weight: 600; }
+.horizon-valeur { font-weight: 700; font-size: 1rem; white-space: nowrap; }
+.horizon-detail { font-size: .7rem; color: var(--doux); line-height: 1.2; }
+
+@media (max-width: 420px) {
+  .horizons { grid-template-columns: repeat(6, 1fr); }
+  .horizon { grid-column: span 2; }
+  .horizon:nth-child(4), .horizon:nth-child(5) { grid-column: span 3; }
+}
+
+/* graphique */
+.bascule { display: flex; background: var(--fond); border-radius: 999px; padding: 3px; }
+.bascule button { border: 0; background: none; border-radius: 999px; padding: 4px 10px; font-size: .8rem; color: var(--doux); }
+.bascule button.actif { background: var(--surface); color: var(--texte); box-shadow: var(--ombre); font-weight: 600; }
+.graphique svg { width: 100%; height: auto; display: block; }
+.graphique .grille { stroke: var(--bord); stroke-width: 1; }
+.graphique .axe { font-size: 9px; fill: var(--doux); }
+.graphique rect[data-niveau="sec"] { fill: transparent; }
+.graphique rect[data-niveau="faible"] { fill: var(--faible); }
+.graphique rect[data-niveau="moderee"] { fill: var(--moderee); }
+.graphique rect[data-niveau="forte"] { fill: var(--forte); }
+
+.legende { display: flex; gap: 14px; font-size: .8rem; color: var(--doux); margin-top: 6px; }
+.legende i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.legende i[data-niveau="faible"] { background: var(--faible); }
+.legende i[data-niveau="moderee"] { background: var(--moderee); }
+.legende i[data-niveau="forte"] { background: var(--forte); }
+
+.maj { text-align: center; font-size: .75rem; color: var(--doux); }
+.vide { color: var(--doux); text-align: center; }
+
+/* ---------- radar ---------- */
+.carte { flex: 1; min-height: 300px; background: #dfe7f1; }
+.couche-prevision { image-rendering: auto; }
+.radar-panneau {
+  background: var(--surface);
+  border-top: 1px solid var(--bord);
+  padding: 12px 16px;
+}
+.radar-ligne { display: flex; align-items: center; gap: 12px; }
+.btn-rond {
+  width: 44px; height: 44px; flex: none;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-texte);
+  font-size: 1rem;
+}
+.radar-infos { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pastille { font-size: .75rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--fond); }
+.pastille[data-type="obs"] { background: #dcfce7; color: #166534; }
+.pastille[data-type="prev"] { background: #dbeafe; color: #1e40af; }
+#radar-curseur { width: 100%; margin: 12px 0 6px; accent-color: var(--accent); }
+.radar-legende { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: .7rem; color: var(--doux); text-align: center; }
+.radar-legende .degrade {
+  grid-column: 1 / -1; height: 8px; border-radius: 4px; margin-bottom: 3px;
+  background: linear-gradient(90deg, #7dd3fc, #38bdf8 20%, #2563eb 45%, #1e40af 60%, #eab308 78%, #e11d48);
+}
+.radar-note, .radar-etat { font-size: .72rem; color: var(--doux); margin: 8px 0 0; }
+.radar-etat:empty { display: none; }
+
+/* ---------- alertes ---------- */
+.champs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.champs label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--doux); }
+select, input[type="time"], input[name="nom"], input[type="search"] {
+  border: 1px solid var(--bord);
+  background: var(--fond);
+  border-radius: 10px;
+  padding: 9px 10px;
+  width: 100%;
+}
+.interrupteur { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.interrupteur input { width: 20px; height: 20px; accent-color: var(--accent); }
+.aide { font-size: .8rem; color: var(--doux); line-height: 1.4; }
+.aide code { font-size: .75rem; }
+
+.btn-principal, .btn-secondaire {
+  border-radius: 12px;
+  padding: 11px 14px;
+  width: 100%;
+  font-weight: 600;
+}
+.btn-principal { border: 0; background: var(--accent); color: var(--accent-texte); }
+.btn-secondaire { border: 1px solid var(--accent); background: transparent; color: var(--accent); }
+
+.jours { border: 0; padding: 0; margin: 6px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.jours legend { font-size: .8rem; color: var(--doux); margin-bottom: 4px; }
+.jours label { position: relative; }
+.jours input { position: absolute; opacity: 0; inset: 0; }
+.jours label {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid var(--bord); font-weight: 600; font-size: .85rem; color: var(--doux);
+}
+.jours label:has(input:checked) { background: var(--accent); color: var(--accent-texte); border-color: var(--accent); }
+.jours label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.liste-programmees { list-style: none; padding: 0; margin: 0 0 12px; }
+.liste-programmees li {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 10px 0; border-bottom: 1px solid var(--bord);
+}
+.liste-programmees small { display: block; color: var(--doux); font-size: .78rem; margin-top: 2px; }
+.btn-fermer { border: 0; background: none; color: var(--doux); font-size: 1.1rem; padding: 6px; }
+.form-programmee { border-top: 1px dashed var(--bord); padding-top: 8px; }
+.form-programmee .btn-principal { margin-top: 8px; }
+.config-json {
+  width: 100%; margin-top: 10px; font-family: ui-monospace, Consolas, monospace; font-size: .75rem;
+  border: 1px solid var(--bord); border-radius: 10px; background: var(--fond); padding: 8px;
+}
+
+/* ---------- navigation ---------- */
+.onglets {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--surface);
+  border-top: 1px solid var(--bord);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.onglets button {
+  border: 0; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 0 10px;
+  font-size: .72rem; color: var(--doux);
+}
+.onglets svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.onglets button.actif { color: var(--accent); font-weight: 600; }
+
+/* ---------- dialogue lieu ---------- */
+.dialogue {
+  border: 0; border-radius: var(--rayon);
+  width: min(92vw, 420px);
+  padding: 16px;
+  background: var(--surface); color: var(--texte);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 25%);
+}
+.dialogue::backdrop { background: rgb(10 20 40 / 45%); }
+.dialogue-entete { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.dialogue-entete h2 { margin: 0; }
+#recherche-lieu { margin-top: 12px; }
+.resultats { list-style: none; padding: 0; margin: 8px 0 0; }
+.resultats button {
+  width: 100%; text-align: left; border: 0; background: none;
+  padding: 10px 6px; border-bottom: 1px solid var(--bord);
+}
+.resultats small { display: block; color: var(--doux); }

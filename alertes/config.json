@@ -1,0 +1,17 @@
+{
+  "alerte_imminente": {
+    "active": true,
+    "avance_minutes": 30,
+    "seuil": "faible"
+  },
+  "alertes_programmees": [
+    {
+      "nom": "Matin",
+      "heure": "07:00",
+      "jours": ["lun", "mar", "mer", "jeu", "ven"],
+      "horizon_heures": 12,
+      "seuil": "faible",
+      "si_sec": true
+    }
+  ]
+}
