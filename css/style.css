@@ -132,29 +132,6 @@ main { flex: 1; overflow-y: auto; }
 .bandeau-source:empty { display: none; }
 .pastille[data-type="nowcast"] { background: #ede9fe; color: #5b21b6; }
 
-/* tuiles 1 h … 24 h */
-.horizons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
-.horizon {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  background: var(--surface);
-  border: 1px solid var(--bord);
-  border-top: 4px solid var(--sec);
-  border-radius: 12px;
-  padding: 10px 6px;
-  text-align: center;
-  display: flex; flex-direction: column; gap: 2px;
-  min-width: 0;
-}
-.horizon[data-niveau="faible"] { border-top-color: var(--faible); }
-.horizon[data-niveau="moderee"] { border-top-color: var(--moderee); }
-.horizon[data-niveau="forte"] { border-top-color: var(--forte); }
-.horizon-duree { font-size: .8rem; color: var(--doux); font-weight: 600; }
-.horizon-valeur { font-weight: 700; font-size: 1rem; white-space: nowrap; }
-.horizon-detail { font-size: .7rem; color: var(--doux); line-height: 1.2; }
-
-.horizon[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: -1px; }
 
 /* sélecteur de durée */
 .selecteur { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--fond); border-radius: 12px; padding: 3px; gap: 2px; }

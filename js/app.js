@@ -9,7 +9,6 @@ const $ = (s) => document.querySelector(s);
 // Dans l'APK Android (Capacitor), on passe par les modules natifs pour la position et les notifications.
 const NATIF = !!window.Capacitor?.isNativePlatform?.();
 const PLUGINS = window.Capacitor?.Plugins || {};
-const HORIZONS = [1, 2, 4, 6, 12, 24];
 const RAFRAICHISSEMENT = 10 * 60000;
 
 // ---------- stockage local (peut être indisponible : on ne compte pas dessus) ----------
@@ -207,7 +206,7 @@ function afficher() {
       ? `Pluie ${LIBELLES[proche.niveau]} en ce moment`
       : `Pluie ${LIBELLES[proche.niveau]} dans ${formatDuree(proche.dansMinutes)}`;
     $('#bandeau-detail').textContent =
-      `${proche.enCours ? 'Jusqu\'à' : `Vers ${heureCourte(proche.debut)}, jusqu'à`} ${heureCourte(proche.fin)} environ · ${mm(proche.total)}`;
+      `${proche.enCours ? 'Jusqu\'à' : `Vers ${heureCourte(proche.debut)}, jusqu'à`} ${heureCourte(proche.fin)} environ · ${mm(proche.total)} au total`;
   } else {
     bandeau.dataset.niveau = 'sec';
     const suite = prochainePluie(prev, 'faible', maintenant, 24);
@@ -230,27 +229,6 @@ function afficher() {
       (r.fiable && r.vitesse ? ` · averses en mouvement à ~${r.vitesse} km/h` : '');
   } else {
     source.textContent = 'Radar indisponible : prévision du modèle uniquement';
-  }
-
-  // tuiles 1 h … 24 h
-  const conteneur = $('#horizons');
-  conteneur.innerHTML = '';
-  for (const h of HORIZONS) {
-    const r = resumer(prev, h, maintenant);
-    const tuile = document.createElement('button');
-    tuile.type = 'button';
-    tuile.className = 'horizon';
-    tuile.dataset.niveau = r.niveau;
-    tuile.dataset.periode = h;
-    tuile.setAttribute('aria-pressed', String(h === etat.periode));
-    tuile.addEventListener('click', () => choisirPeriode(h));
-    const sec = r.niveau === 'sec';
-    tuile.innerHTML = `
-      <span class="horizon-duree">${h} h</span>
-      <span class="horizon-valeur">${sec ? 'Sec' : mm(r.total)}</span>
-      <span class="horizon-detail">${sec ? (r.complet ? 'pas de pluie' : 'indisponible') : r.debut - maintenant < 120000 ? 'en cours' : `dès ${heureCourte(r.debut)}`}</span>`;
-    tuile.setAttribute('aria-label', `${h} heures : ${sec ? 'pas de pluie' : `${mm(r.total)}, pluie ${LIBELLES[r.niveau]}`}`);
-    conteneur.appendChild(tuile);
   }
 
   dessinerGraphique();
@@ -305,7 +283,6 @@ function choisirPeriode(h) {
     b.classList.toggle('actif', actif);
     b.setAttribute('aria-checked', String(actif));
   });
-  document.querySelectorAll('.horizon').forEach((t) => t.setAttribute('aria-pressed', String(+t.dataset.periode === h)));
   dessinerGraphique();
 }
 
@@ -393,7 +370,7 @@ function dessinerGraphique() {
   let t = Math.ceil((maintenant - decalage) / pas) * pas + decalage;
   for (; t <= finFenetre; t += pas) {
     const xt = x(t);
-    if (xt - gauche < 26 || L - droite - xt < 6) continue;
+    if (xt - gauche < 36 || L - droite - xt < 6) continue;
     const d = new Date(t);
     const lib = d.getMinutes() ? `${d.getHours()}h${String(d.getMinutes()).padStart(2, '0')}` : `${d.getHours()}h`;
     svg += `<line x1="${xt}" x2="${xt}" y1="${haut}" y2="${base + 3}" class="grille grille-temps"/><text x="${xt}" y="${H - 6}" class="axe" text-anchor="middle">${lib}</text>`;

@@ -114,7 +114,9 @@ def prochaine_pluie(quarts, seuil, maintenant, dans_heures=2):
             j, taux_max, total = i, p["taux"], 0.0
             while j < len(pas) and niveau(pas[j]["taux"]) != "sec":
                 taux_max = max(taux_max, pas[j]["taux"])
-                total += pas[j]["mm"]
+                # seule la part encore à venir du quart d'heure en cours compte
+                reste = (pas[j]["fin"] - max(pas[j]["debut"], maintenant)) / (pas[j]["fin"] - pas[j]["debut"])
+                total += pas[j]["mm"] * reste
                 j += 1
             debut = max(p["debut"], maintenant)
             return {

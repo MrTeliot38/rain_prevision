@@ -112,7 +112,9 @@ export function prochainePluie(prev, niveauMin = 'faible', maintenant = Date.now
   let total = 0;
   while (j < pas.length && niveauDepuisTaux(pas[j].taux) !== 'sec') {
     tauxMax = Math.max(tauxMax, pas[j].taux);
-    total += pas[j].mm;
+    // seule la part encore à venir du quart d'heure en cours compte
+    const reste = (pas[j].fin - Math.max(pas[j].debut, maintenant)) / (pas[j].fin - pas[j].debut);
+    total += pas[j].mm * reste;
     j++;
   }
   const debut = Math.max(pas[idx].debut, maintenant);
