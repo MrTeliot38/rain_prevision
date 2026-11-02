@@ -5,6 +5,7 @@ Appli web (installable sur le téléphone) qui dit **s'il va pleuvoir là où tu
 - dans **1 h, 2 h, 4 h, 12 h et 24 h**, avec la **quantité prévue** (mm) et l'intensité (faible / modérée / forte) ;
 - un **graphique** au quart d'heure sur 6 h, et heure par heure sur 24 h ;
 - un **radar animé** : les 2 dernières heures observées, puis la prévision **quart d'heure par quart d'heure** sur 6 h ;
+- un onglet **7 jours** : température du matin et de l'après-midi, pluie (quantité et risque), vent et rafales, détail par période (nuit, matin, après-midi, soirée), pluie heure par heure, soleil, UV, humidité — pour le lieu de ton choix ;
 - des **alertes** : « attention, pluie modérée d'ici 30 min », et des **alertes programmées** (ex. tous les matins à 7 h, la pluie prévue sur 12 h).
 
 ## Sources de données (gratuites, sans clé)

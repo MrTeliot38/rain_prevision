@@ -4,6 +4,7 @@ import {
 } from './meteo.js';
 import { Radar, formatDuree } from './radar.js';
 import { prevoirParRadar, fusionner } from './nowcast.js';
+import { chargerSemaine, rendreSemaine } from './semaine.js';
 
 const $ = (s) => document.querySelector(s);
 // Dans l'APK Android (Capacitor), on passe par les modules natifs pour la position et les notifications.
@@ -30,6 +31,8 @@ const stock = {
 
 const etat = {
   lieu: stock.lire('lieu', null),
+  lieuSemaine: stock.lire('lieu-semaine', null),
+  semaine: null,
   prevision: stock.lire('derniere-prevision', null),
   periode: stock.lire('periode', 2),
   alerte: stock.lire('alerte', { active: false, seuil: 'faible', avance: 30 }),
@@ -60,7 +63,37 @@ document.querySelectorAll('.onglets button').forEach((b) => {
     document.querySelectorAll('.vue').forEach((v) => v.classList.toggle('active', v.id === b.dataset.vue));
     if (b.dataset.vue === 'vue-radar') ouvrirRadar();
     else radar?.pause();
+    if (b.dataset.vue === 'vue-semaine') ouvrirSemaine();
+    $('main').scrollTop = 0;
   });
+});
+
+// ---------- 7 jours ----------
+const lieuSemaine = () => etat.lieuSemaine || etat.lieu;
+async function ouvrirSemaine(forcer = false) {
+  const lieu = lieuSemaine();
+  $('#nom-lieu-semaine').textContent = lieu ? lieu.nom : 'Choisir un lieu';
+  $('#btn-lieu-semaine-reinit').hidden = !etat.lieuSemaine || !etat.lieu;
+  if (etat.lieu && etat.lieuSemaine) $('#btn-lieu-semaine-reinit').textContent = `revenir à ${etat.lieu.nom}`;
+  if (!lieu) return;
+  const cle = `${lieu.lat.toFixed(3)},${lieu.lon.toFixed(3)}`;
+  const s = etat.semaine;
+  if (!forcer && s && s.cle === cle && Date.now() - s.donnees.recu < 30 * 60000) return;
+  if (!s || s.cle !== cle) $('#semaine').innerHTML = '<p class="vide">Chargement…</p>';
+  try {
+    const donnees = await chargerSemaine(lieu.lat, lieu.lon);
+    etat.semaine = { cle, donnees };
+    rendreSemaine($('#semaine'), donnees);
+    $('#maj-semaine').textContent = `Mis à jour à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h')} · Météo-France (AROME, ARPEGE) puis modèles européens au-delà de 4 jours, via Open-Meteo`;
+  } catch (err) {
+    $('#semaine').innerHTML = `<p class="vide">${err.message}. Vérifie la connexion puis touche ↻.</p>`;
+  }
+}
+$('#btn-lieu-semaine').addEventListener('click', () => ouvrirDialogue('semaine'));
+$('#btn-lieu-semaine-reinit').addEventListener('click', () => {
+  etat.lieuSemaine = null;
+  stock.ecrire('lieu-semaine', null);
+  ouvrirSemaine();
 });
 
 function ouvrirRadar() {
@@ -83,7 +116,41 @@ function ouvrirRadar() {
 
 // ---------- lieu ----------
 const dialogue = $('#dialogue-lieu');
-$('#btn-lieu').addEventListener('click', () => dialogue.showModal());
+// le même choix de lieu sert à l'onglet Pluie (lieu principal) et à l'onglet 7 jours (lieu libre)
+let cibleDialogue = 'principal';
+function ouvrirDialogue(cible = 'principal') {
+  cibleDialogue = cible;
+  $('#dialogue-titre').textContent = cible === 'semaine' ? 'Lieu des prévisions 7 jours' : 'Choisir un lieu';
+  $('#dialogue-etat').textContent = '';
+  const recents = stock.lire('lieux-recents', []);
+  const zone = $('#lieux-recents');
+  zone.innerHTML = recents.length ? '<p class="aide">Lieux récents</p>' : '';
+  for (const l of recents) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'puce';
+    b.textContent = l.nom;
+    b.addEventListener('click', () => lieuChoisi(l));
+    zone.appendChild(b);
+  }
+  dialogue.showModal();
+}
+$('#btn-lieu').addEventListener('click', () => ouvrirDialogue('principal'));
+
+function lieuChoisi(lieu) {
+  dialogue.close();
+  if (!lieu.gps) {
+    const recents = stock.lire('lieux-recents', []).filter((l) => l.nom !== lieu.nom);
+    stock.ecrire('lieux-recents', [{ nom: lieu.nom, lat: lieu.lat, lon: lieu.lon }, ...recents].slice(0, 6));
+  }
+  if (cibleDialogue === 'semaine') {
+    etat.lieuSemaine = lieu;
+    stock.ecrire('lieu-semaine', lieu);
+    ouvrirSemaine();
+  } else {
+    definirLieu(lieu);
+  }
+}
 
 function definirLieu(lieu) {
   etat.lieu = lieu;
@@ -93,6 +160,7 @@ function definirLieu(lieu) {
     radar.placer(lieu.lat, lieu.lon);
     if ($('#vue-radar').classList.contains('active')) radar.charger();
   }
+  if (!etat.lieuSemaine && $('#vue-semaine').classList.contains('active')) ouvrirSemaine();
   actualiser();
 }
 
@@ -110,8 +178,7 @@ $('#btn-gps').addEventListener('click', async () => {
     const { latitude: lat, longitude: lon } = await obtenirPosition();
     const nom = (await nomDuLieu(lat, lon)) || 'Ma position';
     info.textContent = '';
-    dialogue.close();
-    definirLieu({ nom, lat, lon, gps: true });
+    lieuChoisi({ nom, lat, lon, gps: true });
   } catch (err) {
     const refus = err?.code === 1 || /denied|permission|refus/i.test(err?.message || '');
     info.textContent = refus
@@ -144,10 +211,9 @@ $('#recherche-lieu').addEventListener('input', (e) => {
         b.querySelector('b').textContent = r.nom;
         b.querySelector('small').textContent = r.detail;
         b.addEventListener('click', () => {
-          dialogue.close();
           $('#recherche-lieu').value = '';
           liste.innerHTML = '';
-          definirLieu({ nom: r.nom, lat: r.lat, lon: r.lon });
+          lieuChoisi({ nom: r.nom, lat: r.lat, lon: r.lon });
         });
         li.appendChild(b);
         liste.appendChild(li);
@@ -558,7 +624,7 @@ majFormulaireAlerte();
 majListeProgrammees();
 majConfig();
 if (etat.prevision) afficher();
-if (!etat.lieu) dialogue.showModal();
+if (!etat.lieu) ouvrirDialogue('principal');
 
 // Actualisation : si le lieu vient du GPS, on reprend d'abord la position (la personne a pu bouger).
 let enCours = null;
@@ -589,6 +655,7 @@ async function rafraichir({ position = true } = {}) {
 }
 $('#btn-actualiser').addEventListener('click', () => {
   rafraichir();
+  if ($('#vue-semaine').classList.contains('active')) ouvrirSemaine(true);
   if ($('#vue-radar').classList.contains('active') && radar) {
     radar.grilleChargee = 0;
     setTimeout(() => radar.charger(), 1500);

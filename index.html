@@ -10,7 +10,7 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
   <header class="entete">
@@ -68,6 +68,23 @@
         </div>
       </div>
       <p class="maj" id="maj"></p>
+    </section>
+
+    <!-- 7 JOURS -->
+    <section id="vue-semaine" class="vue" aria-label="Prévisions à 7 jours">
+      <div class="semaine-lieu">
+        <button type="button" id="btn-lieu-semaine" class="puce-lieu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <span id="nom-lieu-semaine">—</span>
+          <small>changer</small>
+        </button>
+        <button type="button" id="btn-lieu-semaine-reinit" class="lien" hidden>revenir à mon lieu</button>
+      </div>
+      <div class="semaine-entetes" aria-hidden="true">
+        <span></span><span></span><span>température</span><span>pluie</span><span>vent km/h</span>
+      </div>
+      <div id="semaine" class="semaine"><p class="vide">Chargement…</p></div>
+      <p class="maj" id="maj-semaine"></p>
     </section>
 
     <!-- RADAR -->
@@ -181,8 +198,12 @@
 
   <nav class="onglets" aria-label="Navigation">
     <button type="button" data-vue="vue-previsions" class="actif">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a5 5 0 1 1 1.2-9.9A6 6 0 0 1 19.5 10 4 4 0 0 1 18 18z"/></svg>
-      Prévisions
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16a5 5 0 1 1 1.2-9.9A6 6 0 0 1 19.5 8 4 4 0 0 1 18 16z"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/></svg>
+      Pluie
+    </button>
+    <button type="button" data-vue="vue-semaine">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      7 jours
     </button>
     <button type="button" data-vue="vue-radar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/></svg>
@@ -196,16 +217,17 @@
 
   <dialog id="dialogue-lieu" class="dialogue">
     <form method="dialog" class="dialogue-entete">
-      <h2>Choisir un lieu</h2>
+      <h2 id="dialogue-titre">Choisir un lieu</h2>
       <button class="btn-fermer" aria-label="Fermer">✕</button>
     </form>
     <button type="button" id="btn-gps" class="btn-principal">Utiliser ma position</button>
     <input id="recherche-lieu" type="search" placeholder="Ou chercher une ville…" autocomplete="off">
     <ul id="resultats-lieu" class="resultats"></ul>
+    <div id="lieux-recents" class="lieux-recents"></div>
     <p id="dialogue-etat" class="aide"></p>
   </dialog>
 
   <script src="vendor/leaflet/leaflet.js"></script>
-  <script type="module" src="js/app.js?v=6"></script>
+  <script type="module" src="js/app.js?v=7"></script>
 </body>
 </html>
