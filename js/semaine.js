@@ -194,13 +194,10 @@ function rendreDetail(zone, j) {
       ${periodes.map(({ nom, nuit, r }) => `
         <div class="periode">
           <span class="periode-nom">${nom}</span>
-          ${iconeTemps(r.code, 34, nuit)}
-          <b class="periode-temp">${r.temp}°</b>
-          <small>ressenti ${r.ressenti}°</small>
-          <small class="${r.pluie >= 0.2 ? 'pluie-oui' : ''}">💧 ${mmTexte(r.pluie)}</small>
-          <small class="${r.proba >= 40 ? 'pluie-oui' : ''}">risque ${r.proba} %</small>
-          <small class="periode-vent ${niveauVent(r.rafales)}">${flecheVent(r.direction, 12)} ${r.vent} km/h</small>
-          <small class="periode-vent ${niveauVent(r.rafales)}">rafales ${r.rafales}</small>
+          <span class="periode-icone">${iconeTemps(r.code, 34, nuit)}</span>
+          <span class="p-bloc"><b class="periode-temp">${r.temp}°</b><small>ressenti ${r.ressenti}°</small></span>
+          <span class="p-bloc ${r.pluie >= 0.2 || r.proba >= 40 ? 'pluie-oui' : ''}"><small>💧 ${mmTexte(r.pluie)}</small><small>risque ${r.proba} %</small></span>
+          <span class="p-bloc periode-vent ${niveauVent(r.rafales)}"><small>${flecheVent(r.direction, 12)} ${r.vent} km/h</small><small>rafales ${r.rafales}</small></span>
         </div>`).join('')}
     </div>
     <h3 class="detail-titre">Pluie heure par heure</h3>
@@ -236,6 +233,6 @@ function graphiquePluie(heures) {
   }
   const total = heures.reduce((s, x) => s + x.pluie, 0);
   if (total < 0.05) svg += `<text x="${L / 2}" y="${(H - bas) / 2 + 4}" class="axe vide-svg" text-anchor="middle">Pas de pluie prévue ce jour-là</text>`;
-  svg += `<text x="${L - droite}" y="10" class="axe" text-anchor="end">barres : mm · pointillés : risque %</text></svg>`;
-  return svg;
+  svg += '</svg>';
+  return svg + '<p class="legende-jour">Barres : pluie en mm · pointillés : risque de pluie (%)</p>';
 }

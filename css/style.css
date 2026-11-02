@@ -348,10 +348,12 @@ select, input[type="time"], input[name="nom"], input[type="search"] {
 .periode-nom { font-size: .72rem; font-weight: 700; color: var(--doux); }
 .periode-temp { font-size: 1.15rem; }
 .periode small { font-size: .64rem; color: var(--doux); line-height: 1.25; white-space: nowrap; }
-.periode small.pluie-oui { color: var(--moderee); font-weight: 600; }
-.periode-vent { display: inline-flex; align-items: center; gap: 2px; }
-.periode-vent.soutenu { color: #d97706 !important; }
-.periode-vent.fort { color: var(--forte) !important; }
+.p-bloc { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+.p-bloc.pluie-oui small { color: var(--moderee); font-weight: 600; }
+.periode-icone svg { display: block; }
+.periode-vent small { display: inline-flex; align-items: center; gap: 2px; }
+.periode-vent.soutenu small { color: #d97706; }
+.periode-vent.fort small { color: var(--forte); }
 .detail-titre { font-size: .85rem; margin: 14px 0 4px; }
 .graphique-jour { width: 100%; height: auto; display: block; }
 .graphique-jour .grille { stroke: var(--bord); }
@@ -359,6 +361,7 @@ select, input[type="time"], input[name="nom"], input[type="search"] {
 .graphique-jour .valeur { font-size: 8px; font-weight: 600; fill: var(--texte); }
 .graphique-jour .barre-pluie { fill: var(--faible); }
 .graphique-jour .courbe-proba { fill: none; stroke: var(--doux); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .8; }
+.legende-jour { font-size: .7rem; color: var(--doux); margin: 2px 0 0; }
 .infos-jour { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 12px 0 0; }
 .infos-jour div { min-width: 0; }
 .infos-jour dt { font-size: .68rem; color: var(--doux); text-transform: uppercase; letter-spacing: .03em; }
@@ -368,7 +371,25 @@ select, input[type="time"], input[name="nom"], input[type="search"] {
 .lieux-recents .aide { width: 100%; margin: 0 0 2px; }
 .puce { border: 1px solid var(--bord); background: var(--fond); border-radius: 999px; padding: 6px 12px; font-size: .85rem; }
 
-@media (max-width: 370px) {
-  .semaine-entetes, .jour-ligne { grid-template-columns: 74px 30px minmax(0, 1fr) 48px 52px; gap: 4px; }
-  .periodes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.periode { min-width: 0; }
+.jour, .jour-ligne > * { min-width: 0; }
+main { overflow-x: hidden; }
+@media (max-width: 420px) {
+  /* sur téléphone : une ligne par période */
+  .periodes { grid-template-columns: 1fr; gap: 4px; }
+  .periode {
+    display: grid; grid-template-columns: 74px 30px 56px minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center; text-align: left; padding: 6px 10px; gap: 6px;
+  }
+  .periode-icone svg { width: 30px; height: 30px; }
+  .periode .p-bloc { align-items: flex-start; }
+  .periode-nom { font-size: .78rem; }
+  .vue { padding: 12px; }
+  .jour-ligne { padding: 10px; }
+  .semaine-entetes, .jour-ligne { grid-template-columns: 78px 32px minmax(0, 1fr) 50px 54px; gap: 4px; }
+}
+@media (max-width: 350px) {
+  .semaine-entetes, .jour-ligne { grid-template-columns: 66px 28px minmax(0, 1fr) 46px 50px; }
+  .jour-nom { font-size: .78rem; }
+  .jour-temp small { font-size: .58rem; }
 }
