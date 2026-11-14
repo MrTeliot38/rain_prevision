@@ -68,7 +68,14 @@ jobs:
 
       - name: Synchroniser
         working-directory: apk
-        run: npx cap sync android
+        run: |
+          npx cap sync android
+          # Jeton de vérification Google (Android Developer Console) : copié à la racine des assets de l'APK
+          if [ -f adi-registration.properties ]; then
+            mkdir -p android/app/src/main/assets
+            cp adi-registration.properties android/app/src/main/assets/adi-registration.properties
+            echo "Jeton de vérification Google inclus."
+          fi
 
       # Signature : si les secrets ANDROID_KEYSTORE (fichier .keystore en base64) et
       # ANDROID_KEYSTORE_PASSWORD existent, l'APK est signé avec cette clé (mises à jour

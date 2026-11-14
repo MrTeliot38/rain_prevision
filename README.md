@@ -47,6 +47,13 @@ Piste d'amélioration : le radar réel de Météo-France (« Paquet Radar », gr
 3. Secrets du dépôt : `ANDROID_KEYSTORE` (le texte copié) et `ANDROID_KEYSTORE_PASSWORD` (le mot de passe).
 4. Désinstalle une dernière fois l'appli, puis installe la nouvelle version : les suivantes s'installeront par-dessus.
 
+### Vérification Google (Android Developer Console)
+
+- Nom du paquet : `io.github.mrteliot38.pluieenvue`
+- Empreinte SHA-256 de la clé de signature :
+  `99:21:3E:8F:EC:C3:FC:11:B1:A6:2A:61:9B:49:AB:DA:48:72:63:B4:73:90:20:70:82:76:05:05:2C:CB:8F:D4`
+- Si la console demande une preuve de propriété : coller le texte fourni par Google dans `apk/adi-registration.properties`. La fabrication suivante l'inclut dans l'APK (`assets/adi-registration.properties`), qu'il suffit ensuite de téléverser dans la console.
+
 ## Alertes téléphone verrouillé (ntfy + GitHub Actions)
 
 Dans l'appli, les alertes ne fonctionnent que quand elle est ouverte. Pour les recevoir à tout moment :
